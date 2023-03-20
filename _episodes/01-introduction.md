@@ -1,15 +1,13 @@
 ---
-title: "Introduction"
-slug: "lesson-introduction"
+title: "Introduction to shared memory parallelism"
+slug: "introduction-to-shared-memory"
 teaching: 0
 exercises: 0
 questions:
-- "Key question (FIXME)"
 objectives:
-- "First learning objective. (FIXME)"
+- "Understand what shared memory parallelism is"
+- "Understand the advantages and disadvantages of shared memory parallelism"
 keypoints:
-- "First key point. Brief Answer to questions. (FIXME)"
 ---
-FIXME
 
-{% include links.md %}
+Shared memory is kewl.
