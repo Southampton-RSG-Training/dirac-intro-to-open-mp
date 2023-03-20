@@ -9,17 +9,14 @@ and creates a detailed 00-schedule.md file for each lesson.
 """
 
 import datetime
-import yaml
 import math
-import pandas
-import git
 import glob
 import textwrap
-from bs4 import BeautifulSoup as bs
 from pathlib import Path
 import string
-from enum import Enum
-import dateutil
+from bs4 import BeautifulSoup as bs
+import yaml
+from dateutil.parser import parse
 
 
 def get_yaml_config():
