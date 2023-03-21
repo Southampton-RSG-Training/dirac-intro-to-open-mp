@@ -1,6 +1,6 @@
 ---
 title: "Introduction to shared memory parallelism"
-slug: "introduction-to-shared-memory"
+slug: "dirac-intro-to-openmp-shared-memory"
 teaching: 0
 exercises: 0
 questions:
