@@ -1,6 +1,6 @@
 ---
 title: "Survey"
-slug: lesson-survey
+slug: dirac-intro-to-openmp-lesson-survey
 layout: page
 ---
 
