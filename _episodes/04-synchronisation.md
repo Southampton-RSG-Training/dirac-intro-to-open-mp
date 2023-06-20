@@ -1,5 +1,5 @@
 ---
-title: Loop Scheduling and Thread Synchronisation
+title: Synchronisation and Race Conditions
 slug: dirac-intro-to-openmp-synchronisation
 teaching: 0
 exercises: 0
@@ -7,14 +7,16 @@ questions:
 -
 objectives:
 - Understand what thread synchronisation is
+- Understand what a race condition is
 - Learn how to control thread synchronisation
-- Understand the difference between different thread schedulers and regions
+- Learn how to avoid errors caused by race conditions
 keypoints:
     - Blah
-usemathjax: true
 ---
 
-## Adding barriers
+## Synchronisation
+
+### Barriers
 
 - Introduce reduction operations?
 
@@ -31,7 +33,7 @@ for (int i = 0; i < 10; i++) {
 printf("Sum: %d\n", sum);
 ```
 
-## Critical regions
+### Critical regions
 
 Blah blah, this section is for talkin g about regions.
 
@@ -40,3 +42,5 @@ Blah blah, this section is for talkin g about regions.
 ### `single`
 
 ### `critical`
+
+## Race Conditions
