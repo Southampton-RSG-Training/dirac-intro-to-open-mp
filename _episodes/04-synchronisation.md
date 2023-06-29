@@ -12,7 +12,11 @@ objectives:
 - Learn how to control thread synchronisation
 - Learn how to avoid errors caused by race conditions
 keypoints:
-    - Blah
+- Synchronising threads is important to ensure data consistency and code correctness
+- A race condition happens when multiple threads try to access and modify the same piece of data at the same time
+
+- OpenMP has many synchronisation mechanisms which are used to coordinate threads
+- Atomic operations, locks and critical regions can be used to prevent race conditions
 ---
 
 In the previous episode, we saw how to use parallel regions, and the shortcut parallel for, to split work across
@@ -157,7 +161,7 @@ one of these regions, they are queue up and wait their turn to access the data a
 
 | Region | Description | Label |
 | - | - | - |
-| critical | Critical regions are used to prevent race conditions when threads need to access and modify the same data. Only one thread is allowed in the critical region at the same time, so threads have to queue up to take their turn. | `#pragma omp critical` |
+| critical | Critical regions are used to prevent race conditions when threads need to access and modify the same data. Only one thread is allowed in the critical region at the same time, so threads have to queue up to take their turn. When one thread is finished in the critical region, it proceeds immediately without having to wait for other threads to finish. | `#pragma omp critical` |
 | single | Single regions are used for code which needs to be executed only by a single thread, such as for I/O operations. The first thread to reach the region will execute the code, whilst the other threads will behave as if they've reached a barrier until the executing thread is finished. | `#pragma omp single` |
 | master | The master region is identical to the single, except execution is done by the designated master thread. | `#pragma omp master` |
 
@@ -266,11 +270,74 @@ parallel for construct.
 
 ## Preventing race conditions
 
-### Data dependency
-
 ### Critical region
 
+Earlier in this episode, critical regions were introduced as a way to synchronise threads.
+
+Critical regions
+
+![Critical regions](fig/critical_region.png)
+
+### Locks
+
+Critical regions provide a convenient and straightforward way to synchronise threads and guard data access to prevent
+race conditions. But in some cases, critical regions may not be flexible or granular enough and lead to excessive amount
+of serialisation. If this is the case, we can use *locks* instead to achieve the same effect as a critical region. Locks
+are a mechanism in OpenMP which, just like a critical regions, create regions in our code which only one thread can be
+in at one time. The main advantage of locks, over a critical region, is that we can use locks to protect smaller regions
+of code, giving us more granular control over thread synchronisation. Locks are also far more flexible when it comes to
+making our code more modular, as it is possible to nest locks, or for accessing and modifying global variables.
+
+But in comparison to critical regions, locks are more complicated to use. Instead of using a single `#pragma`, we have
+to initialise and free resources used for the locks, as well as set and unset where locks are in effect. If we make a
+mistake and forget to unset a lock, then we lose all of our parallelism! To create a lock and delete a lock, we use
+`omp_init_lock()` and `omp_destroy_lock()` respectively.
+
+```c
+omp_lock_t lock;          /* Locks are controlled via a lock variable */
+omp_init_lock(&lock);     /* Allocate resources for a lock */
+
+/* The rest of our parallel algorithm goes here */
+
+omp_destroy_lock(&lock);  /* Deallocate resources for a lock */
+```
+
+To set and unset a lock, we use the `omp_set_lock()` and `omp_unset_lock()` functions.
+
+```c
+omp_set_lock(&lock);    /* When a thread reaches this function, it will only return from it when it can progress
+                           into the lock region */
+shared_variable += 1;
+
+omp_unset_lock(&lock);  /* By unsetting a lock, we signal that the next thread can start */
+```
+
+All together, using a lock should look something like the example below.
+
+```c
+#include <omp.h>
+
+omp_lock_t lock;            /* In practise, you should use a better name for your lock */
+omp_init_lock(&lock);       /* Allocate resources for the lock, before the parallel region */
+
+int shared_variable = 0;
+
+#pragma omp parallel
+{
+    omp_set_lock(&lock);    /* Set the lock, so only one thread can update shared_variable at once */
+    shared_variable += 1;
+    omp_unset_lock(&lock);  /* Remember to unset the lock, to signal the next thread can enter the lock region */
+}
+
+omp_destroy_lock(&lock);    /* Deallocate lock resources */
+```
+
+The main disadvantage of locks is the additional code complexity, and the potential for deadlocks if we forget to unset
+a lock or unlock locks in the wrong order if we have multiple in use.
+
 ### Atomic operations
+
+aaa
 
 In OpenMP, atomic operations are operations which are done without interference from other threads. If we make modifying
 some value in an array atomic, then it's guaranteed, by the compiler, that no other thread can read or modify that array
@@ -301,26 +368,6 @@ for (int i = 0; i < 4; ++i) {
 
 If you have too many atomic regions, then performance is degraded as threads stop and start to access the atomic region.
 Atomic operations are also not very good for complex data structures, really only good on primitive types and pointers.
-
-### Locks
-
-Locks are like critical regions, but more flexible.
-
-```c
-omp_lock_t lock;
-omp_init_lock(&lock);
-
-int shared_variable = 0;
-
-#pragma omp parallel
-{
-    omp_set_lock(&lock);
-    shared_variable += 1;
-    omp_unset_lock(&lock);
-}
-
-omp_destroy_lock(&lock);
-```
 
 > ## Remove the race condition
 >
@@ -369,6 +416,54 @@ omp_destroy_lock(&lock);
 > Find and fix the race condition in the program. Try using both an atomic operation and by using locks.
 >
 > > ## Solution
+> >
+> > We only need to modify the second loop, as each iteration in the first loop is working on an independent piece of
+> > memory, meaning there will be no race condition. In the code below, we have used an atomic operation to increment
+> > `sum`.
+> >
+> > ```c
+> > #include <math.h>
+> > #include <omp.h>
+> > #include <stdio.h>
+> >
+> > #define ARRAY_SIZE 524288
+> >
+> > int main(int argc, char **argv) {
+> >   float sum = 0;
+> >   float array[ARRAY_SIZE];
+> >
+> >   omp_set_num_threads(4);
+> >
+> > #pragma omp parallel for schedule(static)
+> >   for (int i = 0; i < ARRAY_SIZE; ++i) {
+> >     array[i] = cos(M_PI * i);
+> >   }
+> >
+> > #pragma omp parallel for schedule(static)
+> >   for (int i = 0; i < ARRAY_SIZE; i++) {
+> > #pragma omp atomic
+> >     sum += array[i];
+> >   }
+> >
+> >   printf("Sum: %f\n", sum);
+> >
+> >   return 0;
+> > }
+> > ```
+> >
+> > Using a critical region or a lock would also work here. If the loop was more complicated than a single increment
+> > operation, then we would have to use a critical region or a lock. You can see the solution using a lock
+> > [here](code/solutions/04-race-condition-lock.c).
+> >
+> > Of course in reality, we wouldn't bother doing this to the second loop. We'd just use a parallel reduction instead
+> > to handle thread synchronisation for us!
+> >
+> > ```c
+> > #pragma omp parallel for schedule(static) reduction(+:sum)
+> > for (int i = 0; i < ARRAY_SIZE; ++i) {
+> >     sum += array[i];
+> > }
+> > ```
 > >
 > {: .solution}
 {: .challenge}
