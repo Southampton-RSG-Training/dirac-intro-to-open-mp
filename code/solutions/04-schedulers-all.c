@@ -42,35 +42,35 @@ int main(int argc, char **argv) {
   start = omp_get_wtime();
 
 #pragma omp parallel for schedule(static)
-  for (i = 0; i < NUM_ITERATIONS; i++) {
+  for (i = 0; i < NUM_ELEMENTS; i++) {
     unbalanced_loop();
   }
 
   end = omp_get_wtime();
 
-  printf("Static: Total time per rep = %f\n", (end - start) / NUM_ITERATIONS);
+  printf("Static: Total time per rep = %f\n", (end - start) / NUM_ELEMENTS);
 
   start = omp_get_wtime();
 
 #pragma omp parallel for schedule(dynamic)
-  for (i = 0; i < NUM_ITERATIONS; i++) {
+  for (i = 0; i < NUM_ELEMENTS; i++) {
     unbalanced_loop();
   }
 
   end = omp_get_wtime();
 
-  printf("Dynamic: Total time per rep = %f\n", (end - start) / NUM_ITERATIONS);
+  printf("Dynamic: Total time per rep = %f\n", (end - start) / NUM_ELEMENTS);
 
   start = omp_get_wtime();
 
 #pragma omp parallel for schedule(guided)
-  for (i = 0; i < NUM_ITERATIONS; i++) {
+  for (i = 0; i < NUM_ELEMENTS; i++) {
     unbalanced_loop();
   }
 
   end = omp_get_wtime();
 
-  printf("Guided: Total time per rep = %f\n", (end - start) / NUM_ITERATIONS);
+  printf("Guided: Total time per rep = %f\n", (end - start) / NUM_ELEMENTS);
 
   return 0;
 }

@@ -3,7 +3,7 @@ version: "3.8"
 services:
   website:
     build: .
-    container_name: dev-website-openmp
+    container_name: dev-openmp-lesson
     environment:
       - JEKYLL_ENV=development
     ports:
