@@ -39,13 +39,13 @@ int main(int argc, char **argv) {
   double start = omp_get_wtime();
 
 #pragma omp parallel for
-  for (i = 0; i < NUM_ITERATIONS; i++) {
+  for (i = 0; i < NUM_ELEMENTS; i++) {
     unbalanced_loop();
   }
 
   double end = omp_get_wtime();
 
-  printf("Total time for %d reps = %f\n", NUM_ITERATIONS, end - start);
+  printf("Total time for %d reps = %f\n", NUM_ELEMENTS, end - start);
 
   return 0;
 }
