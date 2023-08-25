@@ -29,8 +29,7 @@ OpenMP is an industry-standard API specifically designed for parallel programmin
 
 > ## An OpenMP Timeline
 > 
-> <img src="fig/OpenMP_Timeline.png" alt="OpenMP-history" width="40%" height="40%">
-> </a>
+> <img src="fig/OpenMP_Timeline.png" alt="OpenMP-history" width="50%" height="50%">
 > 
 > The timeline provides an overview of OpenMP's evolution until 2014, with significant advancements 
 > occurring thereafter. Notably, OpenMP 5.0 marked a significant step in 2018, followed by the latest 
