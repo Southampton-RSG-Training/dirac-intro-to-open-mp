@@ -20,6 +20,7 @@ keypoints:
 - Compiler directives guide the compiler to create parallel code, e.g., `#pragma omp parallel`.
 - Runtime library routines offer predefined functions for thread control and synchronization.
 - Environment variables fine-tune OpenMP runtime behavior.
+- To compile and run OpenMP programs, include the `<omp.h>` header, compile with `-fopenmp` flag, and execute the compiled binary.
 - OpenMP is user-friendly, automating thread distribution across systems.
 - Both OpenMP and Low-Level Threading APIs provide effective parallel programming options. The choice depends on factors like ease of use, control, and performance optimization.
 ---
@@ -29,9 +30,7 @@ OpenMP is an industry-standard API specifically designed for parallel programmin
 
 > ## An OpenMP Timeline
 > 
-> <a href="{{ page.root }}/fig/OpenMP_Timeline.png" target="new">
-> <img src="{{ page.root }}/fig/OpenMP_Timeline.png" alt="OpenMP-history" width="40%" height="40%">
-> </a>
+> <img src="fig/OpenMP_Timeline.png" alt="OpenMP-history" width="50%" height="50%" />
 > 
 > The timeline provides an overview of OpenMP's evolution until 2014, with significant advancements 
 > occurring thereafter. Notably, OpenMP 5.0 marked a significant step in 2018, followed by the latest 
@@ -47,7 +46,7 @@ To understand how OpenMP orchestrates this parallel execution, let's explore the
 
 In simpler terms, when your program finds a special "parallel" section, it's like the leader telling the workers to split up and work on different tasks together (that's the "fork" part). After finishing their tasks, these workers come back to the leader, allowing the leader to move forward (that's the "join" part). This teamwork approach helps OpenMP speed up tasks and get things done faster.
 
-<img src="{{ page.root }}/fig/fork-join.png" alt="How it works?" width="60%" height="60%" />
+<img src="fig/fork-join.png" alt="How it works?" width="60%" height="60%" />
 
 ## OpenMP API Overview
 The OpenMP API consists of three key components that enable parallel programming:
@@ -108,7 +107,40 @@ Directives </b> </p>
 > {: .language-bash}
 {: .callout}
 
+Now let's take a quick look at how to compile and run an OpenMP application. Begin by creating a new file named **`hello-omp.c`** and add the following straightforward C code that will display 'Hello World!' on the screen. Don't forget to include the **`<omp.h>`** header file in your code; this file provides important information and functions needed for utilizing OpenMP features. 
+~~~c
+#include <stdio.h>
+#include <omp.h>
+
+int main() {
+    #pragma omp parallel
+    {
+        printf("Hello World!\\n");
+    }
+    return 0;
+}
+~~~
+{: .language-c}
+
+After you've created the code, you'll want to compile it using a standard compiler such as **`gcc`**. To enable the creation of multi-threaded code based on OpenMP directives, pass the **`-fopenmp`** flag to the compiler. This flag indicates that you're compiling an OpenMP program.
+
+Here's the compilation command:
+
+~~~bash
+gcc -o hello-omp -fopenmp hello-omp.c
+~~~
+{: .language-bash}
+
+Once the program is compiled successfully, you can run it just like any other program using the following command:
+~~~bash
+./hello-omp
+~~~
+{: .language-bash}
+
+When you execute the OpenMP program, it will display 'Hello World!' multiple times, as each thread in the parallel region will execute the printf statement concurrently.
+
 ## OpenMP vs. Low-Level Threading APIs (POSIX Threads)
+
 When it comes to parallel programming with threads, there are two main ways to tackle it: the 
 user-friendly OpenMP and the more intricate Low-Level Threading APIs. In this context, '***Low-Level 
 Threading APIs***', refer to interfaces like the Portable Operating System Interface (POSIX), which 
@@ -134,7 +166,7 @@ Now, imagine you're a master chef who wants complete control over every ingredie
 recipe. That's what Low-Level Threading APIs, like POSIX, offer – a lot of control over threads and 
 how they work together. But this kind of control requires a bit more knowledge and effort.
 
-**Benefits of Low-Level Threading APIs: **
+**Benefits of Low-Level Threading APIs:**
 - ***Full Control:*** These APIs allow you to customize every aspect of threads, but it requires a 
 deeper understanding.
 - ***Better Performance:*** If you know exactly what you're doing, you can make things run faster and 
@@ -145,7 +177,8 @@ Let's say you're building a game where players from different parts of the world
 each other in real-time. Here, using POSIX threading would give you the control you need to manage 
 these interactions smoothly and avoid any weird glitches.
 
-**Choosing the Right Framework** 
+**Choosing the Right Framework:** 
+
 When deciding between OpenMP and Low-Level Threading APIs like POSIX for your parallel programming 
 needs, several factors come into play:
 
