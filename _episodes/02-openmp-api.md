@@ -137,7 +137,7 @@ Once the program is compiled successfully, you can run it just like any other pr
 ~~~
 {: .language-bash}
 
-When you execute the OpenMP program, it will display 'Hello World!' multiple times, as each thread in the parallel region will execute the printf statement concurrently.
+When you execute the OpenMP program, it will display 'Hello World!' multiple times, as each thread in the parallel region will execute the **`printf`** statement concurrently.
 
 ## OpenMP vs. Low-Level Threading APIs (POSIX Threads)
 
