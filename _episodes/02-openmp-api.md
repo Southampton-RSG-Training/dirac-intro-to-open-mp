@@ -29,8 +29,7 @@ OpenMP is an industry-standard API specifically designed for parallel programmin
 
 > ## An OpenMP Timeline
 > 
-> <a href="{{ page.root }}/fig/OpenMP_Timeline.png" target="new">
-> <img src="{{ page.root }}/fig/OpenMP_Timeline.png" alt="OpenMP-history" width="40%" height="40%">
+> <img src="fig/OpenMP_Timeline.png" alt="OpenMP-history" width="40%" height="40%">
 > </a>
 > 
 > The timeline provides an overview of OpenMP's evolution until 2014, with significant advancements 
@@ -47,7 +46,7 @@ To understand how OpenMP orchestrates this parallel execution, let's explore the
 
 In simpler terms, when your program finds a special "parallel" section, it's like the leader telling the workers to split up and work on different tasks together (that's the "fork" part). After finishing their tasks, these workers come back to the leader, allowing the leader to move forward (that's the "join" part). This teamwork approach helps OpenMP speed up tasks and get things done faster.
 
-<img src="{{ page.root }}/fig/fork-join.png" alt="How it works?" width="60%" height="60%" />
+<img src="fig/fork-join.png" alt="How it works?" width="60%" height="60%" />
 
 ## OpenMP API Overview
 The OpenMP API consists of three key components that enable parallel programming:
