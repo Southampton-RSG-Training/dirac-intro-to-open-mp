@@ -12,17 +12,16 @@ objectives:
     - Understand the advantages of disadvantages of hybrid parallelism
     - Learn how to use OpenMP and MPI together
 keypoints:
+    -
 ---
 
-At this point in the lesson, we've gone over all of the basics you need to get out there and start writing parallel
-code using OpenMP!
-
-There is one thing still worth being brought to your attention, and that is *hybrid parallelism*.
-
+At this point in the lesson, we've introduced the basics you need to get out there and start writing parallel code using
+OpenMP! There is one thing still worth being brought to your attention, and that is *hybrid parallelism*.
 
 > ## The message passing interface
 >
->  We will assume you know a little bit about MPI.
+> In this episode, we will assume you have some knowledge about the Message Passing Interface (MPI) and that you have a
+> basic understand of how to paralleise code using MPI.
 >
 > If you're not sure, you can think of MPI as being like an OpenMP program where everything is in a
 > `pragma omp parallel` directive.
@@ -344,10 +343,8 @@ Calculated pi           3.141593 error           0.000000
 Total time = 5.078829 seconds
 ```
 
-This is better, threads aren't fighting for access to a CPU core.
-
-Now we'll try setting the number of threads to 8 and the number of ranks to 1. do you think we'll get the same
-performance as the pure openmp implementation?
+This is better now, as threads aren't fighting for access to a CPU core. If we change the number of ranks to 1 and
+the number of threads to 8, will it take the same amount of time to run as the pure OpenMP implementation?
 
 ```bash
 $ export OMP_NUM_THREADS 8
@@ -357,55 +354,100 @@ Calculated pi           3.141593 error           0.000000
 Total time = 5.328421 seconds
 ```
 
-We are close, but we typically won't expect similar performance because of overheads related to MPI.
+In this case, we don't. It takes *slightly* longer to run because of the overhead associated with MPI. Even when we use
+one MPI rank, we still have to initialise MPI, set the rank number, and so on. All of this takes time. The same happens
+with using 8 ranks and 1 thread per rank, as there is still a slight overhead related to scheduling the work for that
+single OpenMP thread.
 
-> ## Your mileage may vary
+```bash
+$ export OMP_NUM_THREADS 1
+$ mpirun -n 8 pi.exe
+Calculated using 1 OMP threads and 8 MPI ranks
+Calculated pi           3.141593 error           0.000000
+Total time = 5.377609 seconds
+```
+
+> ## How many ranks and threads should I use?
 >
-> It is unfortunately difficult to predict the optimum combination of ranks and threads. Often we won't know until we've
-> tried running with a configuration if it is faster or slower. As mentioned earlier, a hybrid approach will typically
-> be slower than a ``pure'' parallelism approach.
+> How many ranks and threads you should use depends on lots of parameters, such as the size of your problem (e.g. do you
+> need a large number of threads but a smaller number of ranks to improve memory efficiency?), the hardware you are
+> using and the design/structure of your code. It's unfortunately very difficult to predict the best combination of
+> ranks and threads. Often we won't know until *after* we've run lots of tests and gained some intuition. It's a
+> delicate balance of balancing overheads associated with thread synchronisation in OpenMP and data communication in
+> MPI. As mentioned earlier, a hybrid implementation will typically be slower than a "pure" MPI implementation for example.
 >
-> Remember there is variance in the run time (e.g. due to contention of resources, and other similar things) so you
-> will need to test multiple times and take the average.
 {: .callout}
 
-> ## Exercise
+> ## Optimum combination of threads and ranks for approximating $\pi$
 >
 > Try various combinations of the number of OpenMP threads and number of MPI processes. For this program, what's faster?
-> Only using MPI, only using OpenMP or a combination of both? Why do you think this is the fastest method of parallelisation?
+> Only using [MPI](code/examples/05-pi-mpi.c), only using [OpenMP](code/examples/05-pi-omp.c) or a
+> [hybrid](code/examples/05-pi-omp-mpi.c) implementation? Why do you think this is the fastest method of
+> parallelisation?
+>
+> Note that there will be some level of variance in the run time each time you run the program, due to factors such as
+> other programs using your CPU at the same time. You should run each thread/rank combination multiple time to get an
+> average.
+>
+> > ## Solution
+> >
+> > There is not really a right answer here, as the best combination will depend on lots of factors such as the hardware
+> > you are running the program on. On a MacBook Pro with a 6-core M1 Pro, the best combination of ranks and threads
+> > was, rather naturally, when either $N_{\mathrm{ranks}} = 1$, $N_{\mathrm{threads}} = 6$ and $N_{\mathrm{ranks}} = 6$,
+> > $N_{\mathrm{threads}} = 1$ with the former being slightly faster. Otherwise, we found the best balance was
+> > $N_{\mathrm{ranks}} = 2$, $N_{\mathrm{threads}} = 3$.
+> {: .solution}
 >
 {: .challenge}
 
-### Submitting to Slurm
+## Submitting a hybrid application to Slurm
+
+There isn't that much you have to do different when it comes to submitting a MPI+OpenMP application to Slurm. In
+addition to the standard parameters for controlling the length of the job, the resources it requires and etc., we also
+need to set additional parameters to tell Slurm how to distribute the threads and ranks across the hardware available.
+For example, instead of only settings the number of ranks, we need to set the number of tasks (or MPI ranks) and how
+many CPUs to assign to each task:
 
 ```bash
 #!/bin/bash
 
-# Slurm job options (name, compute nodes, job time)
-#SBATCH --job-name=pingpong
-#SBATCH --time=00:05:00
-#SBATCH --output=%x-%j.out
-#SBATCH --nodes=1
-#SBATCH --tasks-per-node=2
-#SBATCH --cpus-per-task=1
-#SBATCH --partition=standard
-#SBATCH --qos=short
+#SBATCH --time=00:05:00        # Walltime limit for job
+#SBATCH --nodes=2              # Number of nodes to use
+#SBATCH --tasks-per-node=2     # Number of MPI ranks/tasks to create
+#SBATCH --cpus-per-task=20     # Number of CPUs available to each MPI rank/task
+#SBATCH --partition=standard   # Partition/queue name
 
-export OMP_NUM_THREADS=1
+# Export the number of threads as cpus-per-task
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
-ulimit -s unlimited
-
-export SRUN_CPUS_PER_TASK=${SLURM_CPUS_PER_TASK}
-
-# Launch the parallel job
-
-srun --unbuffered --distribution=block:block --hint=nomultithread ./pingpong
+# Use srun to run the program (but could also use mpirun/mpiexec)
+srun ./pi.exe
 ```
 
-
-> ## Testing core pinning with `xthi`
+> ## Which thread goes where?
 >
-> https://git.ecdf.ed.ac.uk/dmckain/xthi
+> It's not necessarily always clear how threads and ranks will be distributed across cores, and you can accidentally
+> overlap or oversubscribe CPU cores rather easily! An excellent tool for seeing how threads and ranks get distributed
+> is a program called [xthi](https://git.ecdf.ed.ac.uk/dmckain/xthi).
+>
+> In this exercise, we will use `xthi` to experiment with how OpenMP threads and MPI ranks are distributed across the
+> CPU cores. The first thing to do is download and compile `xthi` onto your HPC system. Then using this slurm script as
+> your starting point, experiment with changing the number of tasks per node and cpus per node and seeing how threads
+> and ranks are distributed.
+>
+> ```bash
+> #!/bin/bash
+>
+> #SBATCH --time=00:01:00
+> #SBATCH --nodes=1
+> #SBATCH --ntasks=4
+> #SBATCH --tasks-per-node=2
+> #SBATCH --cpus-per-task=2
+> #SBATCH --partition=YOUR_PARTITION
+>
+> export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+>
+> mpirun -np $SLURM_NTASKS xthi
+> ```
 >
 {: .challenge}
-
