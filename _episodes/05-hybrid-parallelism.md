@@ -2,8 +2,8 @@
 title: Introduction to Hybrid Parallelism
 slug: dirac-intro-to-openmp-hybrid-parallelism
 math: true
-teaching: 0
-exercises: 0
+teaching: 20
+exercises: 20
 questions:
     - What is hybrid parallelism?
     - How could hybrid parallelism benefit my software?
@@ -18,16 +18,13 @@ keypoints:
 At this point in the lesson, we've introduced the basics you need to get out there and start writing parallel code using
 OpenMP! There is one thing still worth being brought to your attention, and that is *hybrid parallelism*.
 
-> ## The message passing interface
+> ## The Message Passing Interface (MPI)
 >
 > In this episode, we will assume you have some knowledge about the Message Passing Interface (MPI) and that you have a
-> basic understand of how to paralleise code using MPI.
->
-> If you're not sure, you can think of MPI as being like an OpenMP program where everything is in a
-> `pragma omp parallel` directive.
+> basic understand of how to paralleise code using MPI. If you're not sure, you can think of MPI as being like an OpenMP
+> program where everything is in a `pragma omp parallel` directive.
 >
 {: .callout}
-
 
 ## What is hybrid parallelism?
 
@@ -50,10 +47,16 @@ research is *MPI+X*. What this means is that an application is *mostly* parallel
 ![A diagram showing MPI+OpenMP](fig/mpi+openmp.png)
 
 In an MPI+OpenMP application, one or multiple MPI processes/ranks are created each of which spawn their own set of
-OpenMP threads as shown in the diagram above. In this setup, the MPI processes can still freely communicate with one
-another. Threads within the same MPI process, obviously do not need to communicate with one another but, maybe not so
-obvious is that threads in one processes cannot communicate with the threads in another -- not unless we are very
-careful and explicitly set up communication between specific threads using the parent MPI processes.
+OpenMP threads as shown in the diagram above. The key thing to realise is that by combining MPI and OpenMP, we can scale
+an OpenMP program from only being able to use the resources on a single HPC compute node to being able to use *multiple*
+compute nodes. We can think of it was MPI being in charge of parallelising a program across nodes, whilst OpenMP is
+responsible for the parallelism on a node.
+
+The MPI processes are able to communicate data with one another and the threads within the same MPI process
+are still using shared-memory, so do not need to communicate data. However, threads in other MPI processes cannot use
+the data that threads in another MPI process have access to due to each MPI process having its own memory space. It is
+still possible to communicate thread-to-thread, but we have to be very careful and explicitly set up communication
+between specific threads using the parent MPI processes.
 
 As an example of how resources could be split using an MPI+OpenMP approach, consider a HPC cluster with some number of
 compute nodes with each having 64 CPU cores. One approach would be to spawn one MPI process per rank which spawns 64
@@ -61,17 +64,65 @@ OpenMP threads, or 2 MPI processes which both spawn 32 OpenMP threads, and so on
 
 ### Advantages
 
-* Improved memory efficiency
-* Better scaling and load balancing
-* Flexibility for different architectures
+#### Improved memory efficiency
+
+Since MPI processes each have their own private memory space, there is almost aways some data replication. This could be
+on small pieces of data, such as some physical constants each MPI rank needs, or it could be large pieces of data such a
+grid of data or a large dataset. When there is large data being replicated in each rank, the memory requirements of an
+MPI program can rapidly increase making it unfeasible to run on some systems. In an OpenMP application, we don't have to
+worry about this as the threads share the same memory space and so there is no need for data replication. A huge
+advantage of MPI+OpenMP is not having to replicate as much data, because there are less MPI ranks which require
+replicated data.
+
+#### Improved scaling and load balancing
+
+With MPI, we can scale our OpenMP applications and use resources on multiple nodes rather than being limited to only the
+resources on a single node. The advantage here is obvious. But by using OpenMP to handle the parallelism on a node, we
+can more easily control the work balance, in comparison to a pure MPI implementation at least, as we can use OpenMP's
+schedulers to address imbalance on a node. There is typically also a reduction in communication overheads, as there is
+no communication required between threads (although this overhead may be replaced by thread synchronisation overheads)
+which can improve the performance of algorithms which previously required communication such as those which require
+exchanging data between overlapping sub-domains (halo exchange).
 
 ### Disadvantages
 
-* Slower due to more overheads
-* Difficult to write and maintain
-* More limited portability
+#### More difficult to write and maintain
+
+Writing *correct* and efficient parallel code in pure MPI and pure OpenMP is hard enough, so combining both of them is,
+naturally, even more difficult to write and maintain. Most of the difficulty comes from having to combine both
+parallelism models in an easy to read and maintainable fashion, as the interplay between the two parallelism models adds
+complexity to the code we write. We also have to ensure we do not introduce any race conditions, making sure to
+synchronise threads and ranks correctly and at the correct parts of the program. Finally, because we are using two
+parallelism models, MPI+OpenMP code bases are larger than a pure MPI or OpenMP version, making the overall
+maintainability more challenging.
+
+#### Increased overheads
+
+Most implementations of a hybrid scheme will be slower than a pure implementation. This derives from additional
+overheads, either from introducing MPI communication or from now having to worry about thread synchronisation. The
+combination of coordinating and synchronisation between MPI processes and OpenMP threads increases the overheads
+required to enable hybrid parallelism.
+
+#### Limited portability
+
+The portability for an MPI+OpenMP application is usually more limited, as there are more libraries and compiler versions
+to consider which have to be tested for compatibility. For example, we may need to account for compiler-specific
+directives for OpenMP and ensure that different MPI implementations and versions (as well as OpenMP) are compatible.
+Most of this can, however, be mitigated with good documentation and a robust build system.
 
 ## When do I need to use hybrid parallelism?
+
+So, when should we use a hybrid scheme? A hybrid scheme is particularly beneficial in scenarios where you need to
+leverage the strength of both the shared- and distributed-memory parallelism paradigms. MPI is used to exploit lots of
+resources across nodes on a HPC cluster, whilst OpenMP is used to efficiently (and somewhat easily) parallelise the work
+each MPI task is required to do.
+
+The most common reason for using a hybrid scheme is for large-scale simulations, where the workload doesn't fit or work
+efficiently in a pure MPI or OpenMP implementation. This could be because of memory constraints due to data replication,
+or due to poor/complex workload balance which are difficult to handle in MPI, or because of inefficient data access
+patterns from how ranks are coordinated. Of course, your mileage may vary and it is not always appropriate to use a
+hybrid scheme. It could be better to think about other ways or optimisations to decrease overheads and memory
+requirements, or to take a different approach to improve the work balance.
 
 ## Writing a hybrid parallel application
 
