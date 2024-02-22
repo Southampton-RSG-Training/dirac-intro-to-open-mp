@@ -10,18 +10,217 @@ objectives:
 keypoints:
 ---
 
-TODO
+## Using OpenMP in a Program
 
-## Parallel Loops
+As we introduced in the last episode,
+OpenMP directives are special comments indicated by `#pragma omp` statements that guide the compiler in creating parallel code. 
+They mark sections of code to be executed concurrently by multiple threads.
+In C/C++, the syntax for pragma directives is as follows:
 
-### Using schedulers
+~~~
+#pragma omp <name_of_directive> <optional_clause>
+~~~
+{: .language-c}
+
+So looking at the directives, in OpenMP these look like:
+
+- The `#pragma omp parallel` directive specifies a block of code for concurrent execution.
+- The `#pragma omp for` directive parallelizes loops by distributing loop iterations among threads.
+- The `#pragma omp sections` directive divides sections of code among threads for concurrent execution.
+
+Let's look at the first two of these.
+
+### Our First Parallelisation
+
+For example, amending our previous example,
+in the following we specify a specific block of code to run parallel threads,
+using the OpenMP runtime routine `omp_get_thread_num()` to return
+the unique identifier of the calling thread:
+
+~~~
+#include <stdio.h>
+#include <omp.h>
+int main() {
+    #pragma omp parallel
+    {
+        printf("Hello from thread %d\n", omp_get_thread_num());
+    }
+}
+~~~
+{: .language-c}
+
+So assuming you've specified `OMP_NUM_THREADS` as `4`:
+
+~~~
+Hello from thread 0
+Hello from thread 1
+Hello from thread 3
+Hello from thread 2
+~~~
+{: .output}
+
+Although the output may not be in the same order,
+since the order and manner in which these threads (and their `printf` statements) run is not guaranteed.
+
+So in summary, simply by adding this directive we have accomplished a basic form of parallelisation.
+
+### What about Variables?
+
+So how do we make use of variables across, and within, our parallel threads?
+Of particular importance in parallel programs is how memory is managed and how and where variables can be manipulated,
+and OpenMP has a number of mechanisms to indicate how they should be handled.
+Essentially, OpenMP provided two ways to do this for variables:
+
+- **Shared**: holds a single instance for all threads to share
+- **Private**: creates and hold a separate copy of the variable for each thread
+
+For example, what if we wanted to hold the thread ID and the total number of threads within variables in the code block?
+Let's start by amending the parallel code block to the following:
+
+~~~
+        int num_threads = omp_get_num_threads();
+        int thread_id = omp_get_thread_num();
+        printf("Hello from thread %d out of %d\n", thread_id, num_threads);
+~~~
+{: .language-c}
+
+Here, `omp_get_num_threads()` returns the total number of available threads.
+If we recompile and re-run we should see:
+
+~~~
+Hello from thread 0 out of 4
+Hello from thread 1 out of 4
+Hello from thread 3 out of 4
+Hello from thread 2 out of 4
+~~~
+{: .output}
+
+> ## OpenMP and C Scoping
+> 
+> Try printing out `num_threads` at the end of the program, after the `#pragma` code block, and recompile.
+> What happens? Is this what you expect?
+> 
+> > ## Solution
+> > 
+> > Since the variable is scoped only to the code block within the curly braces,
+> > as with any C code block, `num_threads` is no longer in scope and cannot be read.
+> {: .solution}
+
+Now by default, variables declared within parallel regions are private to each thread.
+But what about declarations outside of this block? For example:
+
+~~~
+    ...
+    int num_threads, thread_id;
+
+    #pragma omp parallel
+    {
+        num_threads = omp_get_num_threads();
+        thread_id = omp_get_thread_num();
+        printf("Hello from thread %d out of %d\n", thread_id, num_threads);
+    }
+~~~
+{: .language-c}
+
+Which may seem on the surface to be correct.
+However this illustrates a critical point about why we need to be careful.
+Now the variables declarations are outside of the parallel block,
+by default, variables are *shared* across threads, which means these variables can be changed at any time by
+any thread.
+So here, `thread_id` may hold the value for another thread identifier when it's printed,
+since there is an opportunity between it's assignment and it's access within `printf` to be changed in another thread.
+This makes variables potentially *unsafe*, since within a single thread, we are unable to guarantee their value.
+
+To overcome this
+
+
+    #pragma omp parallel private(num_threads, thread_id)
+    {
+
+
+
+
+
+
+
+
+
+>  
+> Now what happens if you declare another variable *before* the `#pragma` code block and use that within it? e.g.
+> 
+> ~~~
+>     int some_variable = 1;
+> 
+>     #pragma omp parallel
+>     {
+>         int num_threads = = omp_get_num_threads();
+>         int thread_id = omp_get_thread_num();
+>         printf("Hello from thread %d out of %d\n", thread_id, num_threads);
+>         printf("some_variable: %d\n", some_variable);
+>     }
+> ~~~
+> {: .language-c}
+> 
+> > ## Solution
+> > 
+> > We see that `some_variable` is accessible within the parallel loop.
+> > This is because, by default, variables are *shared* within parallel and 
+> {: .solution}
+{: .challenge}
+
+Now we can make the shared nature of the thread ID variable explicitly shared by specifying this directly:
+
+
+
+~~~
+...
+int main() {
+    int num_threads, thread_id;
+    #pragma omp parallel shared(thread_id)
+    {
+        thread_id = omp_get_thread_num();
+        printf("Hello from thread %d\n", thread_id);
+    }
+}
+~~~
+{: .language-c}
+
+### Parallel `for` Loops
+
+A typical program uses `for` loops to perform many iterations of the same task,
+and fortunately OpenMP gives us a straightforward way to parallelise them.
+
+
+~~~
+...
+~~~
+{: .language-c}
+
+
+
+> ## Calling Thread Numbering Functions Elsewhere?
+>
+> Write, compile and run a simple OpenMP program that calls both `omp_get_num_threads()` and `omp_get_thread_num()` outside of a parallel region,
+> and prints the values received.
+> What happens?
+> 
+> > ## Solution
+> > 
+> > `omp_get_num_threads()` will return 1 as you might expect, since there is only the primary thread active.
+> >
+> > `omp_get_thread_num()` will return 0, which refers to the identifier for the primary thread, which is zero.
+> {: .solution}
+{: .challenge}
+
+### Using Schedulers
 
 Whenever we use a parallel for, the iterations have to be split into smaller chunks so each thread has something to do.
 In most OpenMP implementations, the default behaviour is to split the iterations into equal sized chunks,
 
-```c
+~~~
 int CHUNK_SIZE = NUM_ITERATIONS / omp_get_num_threads();
-```
+~~~
+{: .language-c}
 
 If the amount of time it takes to compute each iteration is the same, or nearly the same, then this is a perfectly
 efficient way to parallelise the work. Each thread will finish its chunk at roughly the same time as the other thread.
@@ -34,55 +233,113 @@ Fortunately, we can use other types of "scheduling" to control how work is divid
 scheduler is an algorithm which decides how to assign chunks of work to the threads. We can controller the scheduler we
 want to use with the `schedule` directive:
 
-```c
+~~~
 #pragma omp parallel for schedule(SCHEDULER_NAME, OPTIONAL_ARGUMENT)
 for (int i = 0; i < NUM_ITERATIONS; ++i) {
     ...
 }
-```
+~~~
+{: .language-c}
 
 `schedule` takes too arguments: the name of the scheduler and an optional argument.
 
 | Scheduler | Description | Argument |  Uses |
 | - | - | - | - |
-| static |  The work is divided into equal-sized chunks, and each thread is assigned a chunk to work on at compile time. | The chunk size to use. | Best used when the workload is balanced across threads, where each iteration takes roughly the same amount of time. |
-| dynamic | The work is divided into lots of small chunks, and each thread is dynamically assigned a new chunk with it finishes its current work. | The chunk size to use. |  Useful for loops with a workload imbalance, or variable execution time per iteration. |
-| guided |  The chunk sizes start large and decreases in size gradually. | The smallest chunk size to use. | Most useful when the workload is unpredictable, as the scheduler can adapt the chunk size to adjust for any imbalance. |
+| static | The work is divided into equal-sized chunks, and each thread is assigned a chunk to work on at compile time. | The chunk size to use (default: divides iterations into chunks of approx. equal size). | Best used when the workload is balanced across threads, where each iteration takes roughly the same amount of time. |
+| dynamic | The work is divided into lots of small chunks, and each thread is dynamically assigned a new chunk with it finishes its current work. | The chunk size to use (default: 1). |  Useful for loops with a workload imbalance, or variable execution time per iteration. |
+| guided |  The chunk sizes start large and decreases in size gradually. | The smallest chunk size to use (default: 1). | Most useful when the workload is unpredictable, as the scheduler can adapt the chunk size to adjust for any imbalance. |
 | auto | The best choice of scheduling is chosen at run time. | - | Useful in all cases, but can introduce additional overheads whilst it decides which scheduler to use. |
 | runtime | Determined at runtime by the `OMP_SCHEDULE` environment variable or `omp_schedule` pragma. | - | - |
 
-> ## Try out the different schedulers
+> ## Try Out Different Schedulers
 >
-> WIP: loop is not unbalanced enough to demonstrate schedulers well
+> Try each of the static and dynamic schedulers on the code below,
+> which uses `sleep` to mimic processing iterations that take increasing amounts of time to complete as the loop increases.
+> `static` is already specified, so replace this next with `dynamic`.
+> Which scheduler is fastest?
 >
-> ```c
-> #define NUM_ITERATIONS 100
->
-> double start = omp_get_wtime();
->
-> #pragma omp parallel for
-> for (i = 0; i < NUM_ITERATIONS; i++) {
->   unbalanced_loop();
+> ~~~
+> #include <unistd.h>
+> #include <stdlib.h>
+> #include <stdio.h>
+> #include <omp.h>
+> 
+> #define NUM_THREADS 4
+> #define NUM_ITERATIONS 8
+> 
+> int main ( ) {
+>     int i;
+>     double start = omp_get_wtime();
+> 
+>     #pragma omp parallel for num_threads(NUM_THREADS) schedule(static)
+>     for (i = 0; i < NUM_ITERATIONS; i++) {
+>         sleep(i);
+>         printf("Thread %d finished iteration %d\n", omp_get_thread_num(), i);
+>     }
+> 
+>     double end = omp_get_wtime();
+>     printf("Total time for %d reps = %f\n", NUM_ITERATIONS, end - start);
 > }
+> ~~~
+> {: .language-c}
 >
-> double end = omp_get_wtime();
->
-> printf("Total time for %d reps = %f\n", NUM_ITERATIONS, end - start);
-> ```
->
-> Try out the different schedulers, with different block sizes and see how long it takes to finish the loop. Which
-> scheduler was best?
->
-> You should use this [code](code/solutions/04-schedulers-start.c), which includes the unbalanced loop, for this
-> exercise.
+> Try out the different schedulers and see how long it takes to finish the loop.
+> Which scheduler was best?
 >
 > > ## Solution
 > >
-> > ```
-> > Static:  Total time per rep = 0.000691
-> > Dynamic: Total time per rep = 0.000615
-> > Guided:  Total time per rep = 0.000618
-> > ```
+> > You should see something like:
 > >
+> > ~~~
+> > Static:  Total time for 8 reps = 13.003299
+> > Dynamic: Total time for 8 reps = 10.007052
+> > ~~~
+> > 
+> > Here we can see that `dynamic` is the fastest,
+> > which is better with iterations taking differing amounts of time.
+> > But note there is an overhead to using dynamic scheduling,
+> > threads that complete need to stop and await a new value to process from a next iteration.
+> {: .solution}
+> 
+> With a dynamic scheduler, the default chunk size is 1.
+> What happens if specify a chunk size of 2,
+> i.e. `scheduler(dynamic, 2)`?
+> 
+> > ## Solution
+> >
+> > ~~~
+> > Dynamic: Total time for 16 reps = 13.004029
+> > ~~~
+> > 
+> > So here, we now see approximately the same results.
+> > By increasing the chunk size, the dynamic scheduler behaves more like the static one,
+> > since the workload for static would have the same chunk size calculated to be 2
+> > (`NUM_ITERATIONS / NUM_THREADS = CHUNK_SIZE`, `8 / 4 = 2`).
 > {: .solution}
 {: .challenge}
+
+> ## A Matter of Convenience
+> 
+> We've seen that we can amend our code directly to use different schedulers,
+> but when testing our code with each of them editing and recompiling can become tedious.
+> Fortunately we can use the `OMP_SCHEDULE` environment variable to specify the scheduler instead,
+> as well as the chunk size, so we don't need to recompile.
+> 
+> Edit your code to specify `runtime` as the scheduler, i.e. `scheduler(runtime)`,
+> recompile, then set the environment variable in turn to each scheduler, e.g.
+> 
+> ~~~
+> export OMP_SCHEDULE=dynamic
+> ~~~
+> {: .language-bash}
+> 
+> Then rerun. Try it with different chunk sizes too, e.g.:
+> 
+> ~~~
+> export OMP_SCHEDULE=static,1
+> ~~~
+> {: .language-bash}
+> 
+> So much more convenient!
+{: .challenge}
+
