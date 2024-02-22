@@ -12,7 +12,11 @@ objectives:
     - Understand the advantages of disadvantages of hybrid parallelism
     - Learn how to use OpenMP and MPI together
 keypoints:
-    -
+    - Hybrid parallelism is the combination of two or more different parallelisation schemes
+    - One of the most forms of hybrid parallelism is to use MPI with OpenMP
+    - The main advantages of a hybrid MPI+OpenMP approach are reduced memory usage and improved scaling and load balancing
+    - However, this comes at the cost of increased overheads, code complexity and potentially limited portability
+    - In MPI+OpenMP, a common approach is to split up jobs across MPI processes and to parallelise job execution using OpenMP
 ---
 
 At this point in the lesson, we've introduced the basics you need to get out there and start writing parallel code using
