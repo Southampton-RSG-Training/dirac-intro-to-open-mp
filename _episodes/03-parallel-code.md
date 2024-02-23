@@ -126,64 +126,72 @@ Which may seem on the surface to be correct.
 However this illustrates a critical point about why we need to be careful.
 Now the variables declarations are outside of the parallel block,
 by default, variables are *shared* across threads, which means these variables can be changed at any time by
-any thread.
+any thread, which is potentially dangerous.
 So here, `thread_id` may hold the value for another thread identifier when it's printed,
 since there is an opportunity between it's assignment and it's access within `printf` to be changed in another thread.
-This makes variables potentially *unsafe*, since within a single thread, we are unable to guarantee their value.
+This could be particularly problematic with a much larger data set and complex processing of that data,
+where it might not be obvious that incorrect behaviour has happened at all,
+and lead to incorrect results.
+This is known as a *race condition*, and we'll look into them in more detail in the next episode.
 
-To overcome this
-
-
-    #pragma omp parallel private(num_threads, thread_id)
-    {
-
-
-
-
-
-
-
-
-
->  
-> Now what happens if you declare another variable *before* the `#pragma` code block and use that within it? e.g.
+> ## Observing the Race Condition
+> 
+> We can observe the race condition occurring by adding a sleep command between the `thread_id` assignment
+> and use.
+> Add `#include <unistd.h>` to the top of your program, and after `thread_id`'s assignment, add `sleep(2);`
+> which will force the code to wait for 2 seconds before the variable is accessed,
+> providing more opportunity for the race condition to occur.
+> Hopefully you'll then see the unwanted behaviour emerge, for example:
 > 
 > ~~~
->     int some_variable = 1;
-> 
->     #pragma omp parallel
->     {
->         int num_threads = = omp_get_num_threads();
->         int thread_id = omp_get_thread_num();
->         printf("Hello from thread %d out of %d\n", thread_id, num_threads);
->         printf("some_variable: %d\n", some_variable);
->     }
+> Hello from thread 2 out of 4
+> Hello from thread 2 out of 4
+> Hello from thread 2 out of 4
+> Hello from thread 2 out of 4
 > ~~~
-> {: .language-c}
-> 
-> > ## Solution
-> > 
-> > We see that `some_variable` is accessible within the parallel loop.
-> > This is because, by default, variables are *shared* within parallel and 
-> {: .solution}
-{: .challenge}
+> {: .output}
+{: .callout}
 
-Now we can make the shared nature of the thread ID variable explicitly shared by specifying this directly:
-
-
+But with our code, this makes variables potentially *unsafe*, since within a single thread,
+we are unable to guarantee their expected value.
+One approach to ensuring we don't do this accidentally is to specify that there is no default behaviour for variable
+classification.
+We can do this by changing our directive to:
 
 ~~~
-...
-int main() {
-    int num_threads, thread_id;
-    #pragma omp parallel shared(thread_id)
-    {
-        thread_id = omp_get_thread_num();
-        printf("Hello from thread %d\n", thread_id);
-    }
-}
+    #pragma omp parallel default(none)
 ~~~
 {: .language-c}
+
+Now if we recompile, we'll get an error mentioning that these variables aren't specified for use within the parallel region:
+
+~~~
+hello_world_omp.c: In function 'main':
+hello_world_omp.c:10:21: error: 'num_threads' not specified in enclosing 'parallel'
+   10 |         num_threads = omp_get_num_threads();
+      |         ~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~
+hello_world_omp.c:8:13: note: enclosing 'parallel'
+    8 |     #pragma omp parallel default(none)
+      |             ^~~
+hello_world_omp.c:11:19: error: 'thread_id' not specified in enclosing 'parallel'
+   11 |         thread_id = omp_get_thread_num();
+      |         ~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~
+hello_world_omp.c:8:13: note: enclosing 'parallel'
+    8 |     #pragma omp parallel default(none)
+      |             ^~~
+~~~
+{: .output}
+
+So we now need to be explicit in every case for which variables are accessible within the block,
+and whether they're private or shared:
+
+~~~
+    #pragma omp parallel default(none) private(num_threads, thread_id)
+~~~
+{: .language-c}
+
+So here, we ensure that each thread has its own private copy of these variables,
+which is now thread safe.
 
 ### Parallel `for` Loops
 
