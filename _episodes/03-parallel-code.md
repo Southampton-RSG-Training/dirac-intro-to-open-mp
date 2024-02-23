@@ -4,10 +4,24 @@ slug: dirac-intro-to-openmp-parallel-code
 teaching: 0
 exercises: 0
 questions:
+- How can I use OpenMP within a program?
 objectives:
-- Learn how to parallelise work using OpenMP
-- Learn how to use common OpenMP pragma directives
+- Learn how to parallelise work in a program using OpenMP
+- Describe two major OpenMP pragma directives
+- Define and use a parallel region in our code
+- Use OpenMP library functions to obtain the number of available threads and the current thread identifier
+- Describe the classes of visibility (or scoping) of variables between threads
+- Parallelise a for loop using OpenMP
+- Describe the different schedulers available for how OpenMP assigns loop iterations to threads
+- Change the scheduling behaviour for an example program
 keypoints:
+- Use `#pragma omp parallel` to define a parallel code section
+- There are two types of variable scoping for parallel regions - *shared* (variables are shared across threads) and *private* (threads have their own copy of a variable separate to those of other threads).
+- To avoid ambiguous code behaviour, it is good practice to explicitly default to a `none` variable sharing policy between thread, and define exceptions explicitly.
+- Using `#pragma omp parallel for` is a shorter way of defining an `omp parallel` section and a `omp parallel for` within it.
+- Using the library functions `omp_get_num_threads()` and `omp_get_thread_num()` outside of a parallel region will return 1 and 0 respectively.
+- There are 5 different scheduling methods - *static*, *dynamic*, *guided*, *auto*, and *runtime*.
+- We can use the `OMP_SCHEDULE` environment variable to define a scheduler and chunk size that is used by the `runtime` scheduler.
 ---
 
 ## Using OpenMP in a Program
@@ -22,13 +36,12 @@ In C/C++, the syntax for pragma directives is as follows:
 ~~~
 {: .language-c}
 
-So looking at the directives, in OpenMP these look like:
+FIXME: a bit more detail
+
+OpenMP offers a number of directives for parallelisation, although the two we'll focus on in this episode are:
 
 - The `#pragma omp parallel` directive specifies a block of code for concurrent execution.
 - The `#pragma omp for` directive parallelizes loops by distributing loop iterations among threads.
-- The `#pragma omp sections` directive divides sections of code among threads for concurrent execution.
-
-Let's look at the first two of these.
 
 ### Our First Parallelisation
 
@@ -105,6 +118,7 @@ Hello from thread 2 out of 4
 > > Since the variable is scoped only to the code block within the curly braces,
 > > as with any C code block, `num_threads` is no longer in scope and cannot be read.
 > {: .solution}
+{: .challenge}
 
 Now by default, variables declared within parallel regions are private to each thread.
 But what about declarations outside of this block? For example:
@@ -196,15 +210,91 @@ which is now thread safe.
 ### Parallel `for` Loops
 
 A typical program uses `for` loops to perform many iterations of the same task,
-and fortunately OpenMP gives us a straightforward way to parallelise them.
-
+and fortunately OpenMP gives us a straightforward way to parallelise them,
+which builds on the use of directives we've learned so far.
 
 ~~~
-...
+    ...
+    int num_threads, thread_id;
+    
+    omp_set_num_threads(4);
+    
+    #pragma omp parallel for default(none) private(num_threads, thread_id)
+    for (int i = 1; i <= 10; i++)
+    {
+        num_threads = omp_get_num_threads();
+        thread_id = omp_get_thread_num();
+        printf("Hello from iteration %i from thread %d out of %d\n", i, thread_id, num_threads);
+    }
+    
+    printf("%d",i);
+}
 ~~~
 {: .language-c}
 
+So essentially, very similar format to before, but here we use `for` in the pragma preceding a loop definition,
+which will then assign 10 separate loop iterations across the 4 available threads.
+Later in this episode we'll explore the different ways in which OpenMP is able to schedule iterations from loops across these threads,
+and how to specify different scheduling behaviours.
 
+> ## A Shortcut for Convenience
+> 
+> The `#pragma omp parallel for` is actually equivalent to using two separate directives.
+> For example:
+> 
+> ~~~
+> #pragma omp parallel
+> {
+>     #pragma omp for
+>     for (int 1 = 1; 1 <=10; i++)
+>     {
+>         ...
+>     }
+> }
+> ~~~
+> {: .language-c}
+> 
+> ...is equivalent to:
+> 
+> ~~~
+> #pragma omp parallel for
+> for (int 1 = 1; 1 <=10; i++)
+> {
+>     ...
+> }
+> ~~~
+> {: .language-c}
+> 
+> In the first case, `#pragma omp parallel` spawns a group of threads,
+> whilst `#pragma omp for` divides the loop iterations between them.
+> But if you only need to do parallelisation within a single loop,
+> the second case has you covered for convenience.
+{: .callout}
+
+Note we also explicitly set the number of desired threads to 4, using the OpenMP `omp_set_num_threads()` function,
+as opposed to the environment variable method.
+Use of this function will override any value set in `OMP_NUM_THREADS`.
+
+You should see something (but perhaps not exactly) like:
+
+~~~
+Hello from iteration 1 from thread 0 out of 4
+Hello from iteration 2 from thread 0 out of 4
+Hello from iteration 3 from thread 0 out of 4
+Hello from iteration 4 from thread 1 out of 4
+Hello from iteration 5 from thread 1 out of 4
+Hello from iteration 6 from thread 1 out of 4
+Hello from iteration 9 from thread 3 out of 4
+Hello from iteration 10 from thread 3 out of 4
+Hello from iteration 7 from thread 2 out of 4
+Hello from iteration 8 from thread 2 out of 4
+~~~
+{: .output}
+
+So with careful attention to variable scoping,
+using OpenMP to parallelise an existing loop is often quite straightforward.
+However, particularly with more complex programs, there are some aspects and potential pitfalls with OpenMP parallelisation 
+we need to be aware of - such as race conditions - which we'll explore in the next episode.
 
 > ## Calling Thread Numbering Functions Elsewhere?
 >
