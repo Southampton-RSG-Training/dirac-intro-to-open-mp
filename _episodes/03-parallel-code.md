@@ -29,19 +29,26 @@ keypoints:
 As we introduced in the last episode,
 OpenMP directives are special comments indicated by `#pragma omp` statements that guide the compiler in creating parallel code. 
 They mark sections of code to be executed concurrently by multiple threads.
-In C/C++, the syntax for pragma directives is as follows:
+At a high level, the C/C++ syntax for pragma directives is as follows:
 
 ~~~
-#pragma omp <name_of_directive> <optional_clause>
+#pragma omp <name_of_directive> [ <optional_clause> ...]
 ~~~
 {: .language-c}
 
-FIXME: a bit more detail
+Following a directive are multiple optional clauses, which are themselves C expressions and may contain other clauses,
+with any arguments to both directives and clauses enclosed in parentheses and separated by commas. For example:
+
+~~~
+#pragma omp a-directive a-clause(argument1, argument2)
+~~~
+{: .language-c}
 
 OpenMP offers a number of directives for parallelisation, although the two we'll focus on in this episode are:
 
 - The `#pragma omp parallel` directive specifies a block of code for concurrent execution.
 - The `#pragma omp for` directive parallelizes loops by distributing loop iterations among threads.
+
 
 ### Our First Parallelisation
 
