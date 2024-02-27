@@ -24,6 +24,7 @@ keypoints:
 - OpenMP is user-friendly, automating thread distribution across systems.
 - Both OpenMP and Low-Level Threading APIs provide effective parallel programming options. The choice depends on factors like ease of use, control, and performance optimization.
 ---
+
 ## What is OpenMP?
 
 OpenMP is an industry-standard API specifically designed for parallel programming in shared memory environments. It supports programming in languages such as C, C++, and Fortran. OpenMP is an open source, industry-wide initiative that benefits from collaboration among hardware and software vendors, governed by the OpenMP Architecture Review Board ([OpenMP ARB](https://www.openmp.org/)).
@@ -48,102 +49,70 @@ In simpler terms, when your program finds a special "parallel" section, it's lik
 
 <img src="fig/fork-join.png" alt="How it works?" width="60%" height="60%" />
 
-## OpenMP API Overview
-The OpenMP API consists of three key components that enable parallel programming:
-> <p style="text-align: left; font-size:18px"> <b>1. Compiler
-Directives </b> </p>
-> {: .checklist}
-> OpenMP directives are special comments indicated by `#pragma omp` 
-> statements that guide the compiler in creating parallel code. They 
-> mark sections of code to be executed concurrently by multiple 
-> threads. In C/C++, the syntax for pragma directives is as follows:
->
-> ~~~c
-> #pragma omp <name_of_directive> <optional_clause>
-> ~~~
-> {: .language-c}
-> For example: 
-> - The `#pragma omp parallel` directive specifies a block of code for concurrent execution.
-> - The `#pragma omp for` directive parallelizes loops by distributing loop iterations among threads.
-> - The `#pragma omp sections` directive divides sections of code among threads for concurrent execution.
-> <p style="text-align: left; font-size:18px"> <b>2. Runtime Library Routines </b> </p>
-> {: .checklist}
-> These are predefined functions provided by the OpenMP runtime 
-> library. They allow you to control the behavior of threads, manage 
-> synchronization, and handle parallel execution. For example, in the 
-> following code the runtime routine `omp_get_thread_num()` returns 
-> the unique identifier of the calling thread.
-> ~~~c
-> #include <stdio.h>
-> #include <omp.h>
-> int main() {
->     int num_threads, thread_id;
->     #pragma omp parallel private(thread_id)
->     {
->         thread_id = omp_get_thread_num();
->         printf("Hello from thread %d\n", thread_id);
->     }
-> }
-> ~~~
-> {: .language-c}
->
-> > ## Header Dependency 
-> > Note that to use of OpenMP directives and functions in your code, it's essential to 
-> > include the `<omp.h>` header file. This header file provides the necessary definitions for utilizing 
-> > OpenMP constructs, such as parallel regions, work-sharing directives, and synchronization mechanisms.
-> > {: .output}
-> {: .caution}
->
-> <p style="text-align: left; font-size:18px"> <b>3. Environment Variables </b> </p>
-> {: .checklist}
-> These are settings that can be adjusted to influence the behavior of the OpenMP runtime. They provide 
-> a way to fine-tune the parallel execution of your program. Setting OpenMP environment variables is 
-> typically done similarly to other environment variables for your system. For instance, you can adjust 
-> the number of threads as follows:
-> ~~~bash
-> export OMP_NUM_THREADS=4
-> ./my_openmp_program
-> ~~~
-> {: .language-bash}
-{: .callout}
+OpenMP consists of three key components that enable parallel programming using threads:
 
-Now let's take a quick look at how to compile and run an OpenMP application. Begin by creating a new file named **`hello-omp.c`** and add the following straightforward C code that will display 'Hello World!' on the screen. Don't forget to include the **`<omp.h>`** header file in your code; this file provides important information and functions needed for utilizing OpenMP features. 
-~~~c
+- **Compiler directives:** OpenMP makes use of special code markers known as *compiler directives* to indicate to the compiler when and how to parallelise various sections of code. These directives are prefixed with `#pragma omp`, and mark sections of code to be executed concurrently by multiple threads.
+- **Runtime Library Routines:** These are predefined functions provided by the OpenMP runtime library. They allow you to control the behavior of threads, manage synchronization, and handle parallel execution. For example, we can use the function `omp_get_thread_num()` to obtain the unique identifier of the calling thread.
+- **Environment Variables:** These are settings that can be adjusted to influence the behavior of the OpenMP runtime. They provide a way to fine-tune the parallel execution of your program. Setting OpenMP environment variables is typically done similarly to other environment variables for your system. For instance, you can adjust the number of threads to use for a program you are about to execute by specifying the value in the `OMP_NUM_THREADS` environment variable.
+
+
+## Running a Code with OpenMP
+
+Before we delve into specifics of writing code that uses OpenMP, let's first look at how we compile and run an example "Hello World!" OpenMP program that prints this to the console.
+Save the following code in `hello_world_omp.c`:
+
+~~~
 #include <stdio.h>
 #include <omp.h>
 
 int main() {
     #pragma omp parallel
     {
-        printf("Hello World!\\n");
+        printf("Hello world!\n");
     }
-    return 0;
 }
 ~~~
 {: .language-c}
 
-After you've created the code, you'll want to compile it using a standard compiler such as **`gcc`**. To enable the creation of multi-threaded code based on OpenMP directives, pass the **`-fopenmp`** flag to the compiler. This flag indicates that you're compiling an OpenMP program.
+You'll want to compile it using a standard compiler such as `gcc`. To enable the creation of multi-threaded code based on OpenMP directives, pass the `-fopenmp` flag to the compiler. This flag indicates that you're compiling an OpenMP program:
 
-Here's the compilation command:
-
-~~~bash
-gcc -o hello-omp -fopenmp hello-omp.c
+~~~
+gcc hello_world_omp.c -o hello_world_omp -fopenmp
 ~~~
 {: .language-bash}
 
-Once the program is compiled successfully, you can run it just like any other program using the following command:
-~~~bash
-./hello-omp
+Before we run the code we also need to indicate how many threads we wish the program to use.
+One way to do this is to specify this using the `OMP_NUM_THREADS` environment variable, e.g.
+
+~~~
+export OMP_NUM_THREADS=4
 ~~~
 {: .language-bash}
 
-When you execute the OpenMP program, it will display 'Hello World!' multiple times, as each thread in the parallel region will execute the **`printf`** statement concurrently.
+Now you can run it just like any other program using the following command:
+
+~~~
+./hello_world_omp
+~~~
+{: .language-bash}
+
+When you execute the OpenMP program,
+it will display 'Hello World!' multiple times according to the value we entered in `OMP_NUM_THREADS`,
+with each thread in the parallel region executing the `printf` statement concurrently:
+
+~~~
+Hello world!
+Hello world!
+Hello world!
+Hello world!
+~~~
+{: .output}
 
 ## OpenMP vs. Low-Level Threading APIs (POSIX Threads)
 
 When it comes to parallel programming with threads, there are two main ways to tackle it: the 
-user-friendly OpenMP and the more intricate Low-Level Threading APIs. In this context, '***Low-Level 
-Threading APIs***', refer to interfaces like the Portable Operating System Interface (POSIX), which 
+user-friendly OpenMP and the more intricate Low-Level Threading APIs. In this context, **Low-Level 
+Threading APIs**, refer to interfaces like the Portable Operating System Interface (POSIX), which 
 defines a set of standard functions and interfaces for interacting with operating systems. Each 
 approach has its own advantages and considerations, so let's break them down in simpler terms:
 
@@ -152,7 +121,8 @@ your code without delving into complex technicalities. This makes it ideal for b
 seeking a straightforward approach. It's like choosing a reliable car that gets you from point A to 
 point B comfortably. 
 
-**Advantages of OpenMP:**
+Advantages of OpenMP:
+
 - ***User-Friendly:*** OpenMP requires minimal code adjustments, making it a friendly choice for 
  newcomers.
 - ***Automated Work Distribution:*** It divides tasks among threads, ensuring balanced workloads.
@@ -166,7 +136,8 @@ Now, imagine you're a master chef who wants complete control over every ingredie
 recipe. That's what Low-Level Threading APIs, like POSIX, offer – a lot of control over threads and 
 how they work together. But this kind of control requires a bit more knowledge and effort.
 
-**Benefits of Low-Level Threading APIs:**
+Benefits of Low-Level Threading APIs:
+
 - ***Full Control:*** These APIs allow you to customize every aspect of threads, but it requires a 
 deeper understanding.
 - ***Better Performance:*** If you know exactly what you're doing, you can make things run faster and 
@@ -177,7 +148,7 @@ Let's say you're building a game where players from different parts of the world
 each other in real-time. Here, using POSIX threading would give you the control you need to manage 
 these interactions smoothly and avoid any weird glitches.
 
-**Choosing the Right Framework:** 
+### Choosing the Right Framework
 
 When deciding between OpenMP and Low-Level Threading APIs like POSIX for your parallel programming 
 needs, several factors come into play:
