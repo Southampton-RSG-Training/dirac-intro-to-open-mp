@@ -64,7 +64,7 @@ the variable before thread 1 reads it, then thread 1 will read a value of 1 and 
 correct value of 2. This illustrates why it's called a race condition, because threads race each other to access and
 modify variables before another thread can!
 
-> ## Analogy: editing a document
+> ## Analogy: Editing a document
 >
 > Imagine two people trying to update the same document at the same time. If they don't communicate what they're doing,
 > they might edit the same part of the document and overwrite each others changes, ending up with a messy and
@@ -123,7 +123,7 @@ potentially limit access to tasks or data to certain threads.
 ### Barriers
 
 Barriers are a the most basic synchronisation mechanism. They are used to create a waiting point in our program. When a
-thread reaches a barrier, it wiats until all other threads have reached the same barrier before continuing. To add a
+thread reaches a barrier, it waits until all other threads have reached the same barrier before continuing. To add a
 barrier, we use the `#pragma omp barrier` directive. In the example below, we have used a barrier to synchronise threads
 such that they don't start the main calculation of the program until a look up table has been initialised (in parallel),
 as the calculation depends on this data.
@@ -202,9 +202,9 @@ table below shows the types of synchronisation region in OpenMP.
 
 | Region | Description | Directive |
 | - | - | - |
-| critical | Only one thread is allowed in the critical region. Threads have to queue up to take their turn. When one thread is finished in the critical region, it proceeds to execute the next chunk of code (not in the critical region) immediately without having to wait for other threads to finish. | `#pragma omp critical` |
-| single | Single regions are used for code which needs to be executed only by a single thread, such as for I/O operations. The first thread to reach the region will execute the code, whilst the other threads will behave as if they've reached a barrier until the executing thread is finished. | `#pragma omp single` |
-| master | A master region is identical to the single region other than that execution is done by the designated master thread (usually thread 0). | `#pragma omp master` |
+| **critical** | Only one thread is allowed in the critical region. Threads have to queue up to take their turn. When one thread is finished in the critical region, it proceeds to execute the next chunk of code (not in the critical region) immediately without having to wait for other threads to finish. | `#pragma omp critical` |
+| **single** | Single regions are used for code which needs to be executed only by a single thread, such as for I/O operations. The first thread to reach the region will execute the code, whilst the other threads will behave as if they've reached a barrier until the executing thread is finished. | `#pragma omp single` |
+| **master** | A master region is identical to the single region other than that execution is done by the designated master thread (usually thread 0). | `#pragma omp master` |
 
 The next example builds on the previous example which included a lookup table. In the the modified code, the lookup
 table is written to disk after it has been initialised. This happens in a single region, as only one thread needs to
@@ -490,8 +490,8 @@ overheads which can damage the parallel performance.
 > }
 > ```
 >
-> When we run the program multiple times, the output we expect sum to have the value of `0.000000`. But if we run the
-> program multiple times, we sometimes get the wrong output:
+> When we run the program multiple times, we expect the output `sum` to have the value of `0.000000`. However, due to an
+> existing race condition, the program can sometimes produce wrong output in different runs, as shown below:
 >
 > ```c
 > 1. Sum: 1.000000
