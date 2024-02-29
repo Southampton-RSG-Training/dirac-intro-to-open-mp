@@ -1,7 +1,7 @@
 ---
 title: Introduction to OpenMP
 slug: dirac-intro-to-openmp-openmp-api
-teaching: 0
+teaching: 10
 exercises: 0
 math: true
 questions:
@@ -68,7 +68,7 @@ Save the following code in `hello_world_omp.c`:
 int main() {
     #pragma omp parallel
     {
-        printf("Hello world!\n");
+        printf("Hello World!\n");
     }
 }
 ~~~
@@ -101,10 +101,10 @@ it will display 'Hello World!' multiple times according to the value we entered 
 with each thread in the parallel region executing the `printf` statement concurrently:
 
 ~~~
-Hello world!
-Hello world!
-Hello world!
-Hello world!
+Hello World!
+Hello World!
+Hello World!
+Hello World!
 ~~~
 {: .output}
 
