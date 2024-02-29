@@ -1,7 +1,7 @@
 ---
 title: Writing Parallel Applications with OpenMP
 slug: dirac-intro-to-openmp-parallel-code
-teaching: 0
+teaching: 15
 exercises: 0
 questions:
 - How can I use OpenMP within a program?
@@ -346,15 +346,15 @@ for (int i = 0; i < NUM_ITERATIONS; ++i) {
 ~~~
 {: .language-c}
 
-`schedule` takes too arguments: the name of the scheduler and an optional argument.
+`schedule` takes two arguments: the name of the scheduler and an optional argument.
 
 | Scheduler | Description | Argument |  Uses |
 | - | - | - | - |
-| static | The work is divided into equal-sized chunks, and each thread is assigned a chunk to work on at compile time. | The chunk size to use (default: divides iterations into chunks of approx. equal size). | Best used when the workload is balanced across threads, where each iteration takes roughly the same amount of time. |
-| dynamic | The work is divided into lots of small chunks, and each thread is dynamically assigned a new chunk with it finishes its current work. | The chunk size to use (default: 1). |  Useful for loops with a workload imbalance, or variable execution time per iteration. |
-| guided |  The chunk sizes start large and decreases in size gradually. | The smallest chunk size to use (default: 1). | Most useful when the workload is unpredictable, as the scheduler can adapt the chunk size to adjust for any imbalance. |
-| auto | The best choice of scheduling is chosen at run time. | - | Useful in all cases, but can introduce additional overheads whilst it decides which scheduler to use. |
-| runtime | Determined at runtime by the `OMP_SCHEDULE` environment variable or `omp_schedule` pragma. | - | - |
+| **static** | The work is divided into equal-sized chunks, and each thread is assigned a chunk to work on at compile time. | The chunk size to use (default: divides iterations into chunks of approx. equal size). | Best used when the workload is balanced across threads, where each iteration takes roughly the same amount of time. |
+| **dynamic** | The work is divided into lots of small chunks, and each thread is dynamically assigned a new chunk with it finishes its current work. | The chunk size to use (default: 1). |  Useful for loops with a workload imbalance, or variable execution time per iteration. |
+| **guided** |  The chunk sizes start large and decreases in size gradually. | The smallest chunk size to use (default: 1). | Most useful when the workload is unpredictable, as the scheduler can adapt the chunk size to adjust for any imbalance. |
+| **auto** | The best choice of scheduling is chosen at run time. | - | Useful in all cases, but can introduce additional overheads whilst it decides which scheduler to use. |
+| **runtime** | Determined at runtime by the `OMP_SCHEDULE` environment variable or `omp_schedule` pragma. | - | - |
 
 > ## Try Out Different Schedulers
 >
