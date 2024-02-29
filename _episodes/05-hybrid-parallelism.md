@@ -20,7 +20,7 @@ keypoints:
 ---
 
 At this point in the lesson, we've introduced the basics you need to get out there and start writing parallel code using
-OpenMP! There is one thing still worth being brought to your attention, and that is *hybrid parallelism*.
+OpenMP. There is one thing still worth being brought to your attention, and that is *hybrid parallelism*.
 
 > ## The Message Passing Interface (MPI)
 >
@@ -40,9 +40,9 @@ research is *MPI+X*. What this means is that an application is *mostly* parallel
 
 > ## Heterogeneous Computing
 >
-> An MPI+OpenMP scheme is known as homogenous computing, meaning all the processing units involved are of the sme type.
+> An MPI+OpenMP scheme is known as homogenous computing, meaning all the processing units involved are of the same type.
 > The opposite is heterogeneous computing, where different types of processing architectures are used such as CPUs,
-> GPUs (graphics processing units), TPUs (tensor processing units) and FGPAs (field-programmable gate arrays).The goal
+> GPUs (graphics processing units), TPUs (tensor processing units) and FGPAs (field-programmable gate arrays). The goal
 > of heterogeneous computing is to leverage the strengths of each processor type to achieve maximum performance and
 > efficiency. The most common in research will be CPU and GPU.
 >
@@ -378,7 +378,7 @@ Calculated pi           3.141593 error           0.000000
 Total time = 5.818889 seconds
 ```
 
-Ouch, this took longer to run than the pure OpenMP implementation (although only marginally longer in this example! You
+Ouch, this took longer to run than the pure OpenMP implementation (although only marginally longer in this example!). You
 may have noticed that we have 8 MPI ranks, each of which are spawning 8 of their own OpenMP threads. This is an
 important thing to realise. When you specify the number of threads for OpenMP to use, this is the number of threads
 *each* MPI process will spawn. So why did it take longer? With each of the 8 MPI ranks spawning 8 threads, 64 threads
