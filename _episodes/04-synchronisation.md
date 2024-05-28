@@ -251,6 +251,12 @@ clause](https://www.intel.com/content/www/us/en/docs/advisor/user-guide/2023-0/o
 > Create a program that updates a shared counter to track the progress of a parallel loop. Think about which type of
 > synchronisation region you can use. Can you think of any potential problems with your implementation, what happens
 > when you use different loop schedulers? You can use the code example below as your starting point.
+> 
+> NB: to compile this you'll need to add `-lm` to inform the linker to link to the `math` C library, e.g.
+> 
+> ```bash
+> gcc counter.c -o counter -fopenmp -lm
+> ```
 >
 > ```c
 > #include <math.h>
