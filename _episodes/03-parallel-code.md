@@ -233,8 +233,6 @@ which builds on the use of directives we've learned so far.
         thread_id = omp_get_thread_num();
         printf("Hello from iteration %i from thread %d out of %d\n", i, thread_id, num_threads);
     }
-    
-    printf("%d",i);
 }
 ~~~
 {: .language-c}
