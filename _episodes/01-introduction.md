@@ -1,6 +1,6 @@
 ---
 title: Introduction to Parallelisation
-slug: openmp-intro-to-parallelisation
+slug: dirac-intro-to-openmp-intro-to-parallelisation
 teaching: 30
 exercises: 0
 math: true
