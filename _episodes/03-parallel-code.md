@@ -354,6 +354,26 @@ for (int i = 0; i < NUM_ITERATIONS; ++i) {
 | **auto** | The best choice of scheduling is chosen at run time. | - | Useful in all cases, but can introduce additional overheads whilst it decides which scheduler to use. |
 | **runtime** | Determined at runtime by the `OMP_SCHEDULE` environment variable or `omp_schedule` pragma. | - | - |
 
+> ## How the `auto` Scheduler Works
+>
+> The `auto` scheduler lets the compiler or runtime system automatically decide the best way to distribute work among threads. This is really convenient because 
+> you don’t have to manually pick a scheduling method—the system handles it for you. It’s especially handy if your workload distribution is uncertain or changes a 
+> lot. But keep in mind that how well `auto` works can depend a lot on the compiler. Not all compilers optimize equally well, and there might be a bit of overhead 
+> as the runtime figures out the best scheduling method, which could affect performance in highly optimized code. 
+> 
+> The [OpenMP documentation](https://www.openmp.org/wp-content/uploads/OpenMP4.0.0.pdf) states that with `schedule(auto)`, the scheduling decision is left to the compiler or runtime system. So, how does the compiler make 
+> this decision? When using GCC, which is common in many environments including HPC, the `auto` scheduler often maps to `static` scheduling. 
+> This means it splits the work into equal chunks ahead of time for simplicity and performance. `static` scheduling is straightforward and has low overhead, which 
+> often leads to efficient execution for many applications.
+>
+> However, specialized HPC compilers, like those from Intel or IBM, might handle `auto` differently. These advanced compilers can dynamically adjust the scheduling 
+> method during runtime, considering things like workload variability and specific hardware characteristics to optimize performance.
+> 
+> So, when should you use `auto`? It’s great during development for quick performance testing without having to manually adjust scheduling methods. It’s also 
+> useful in environments where the workload changes a lot, letting the runtime adapt the scheduling as needed. While `auto` can make your code simpler, it’s 
+> important to test different schedulers to see which one works best for your specific application. 
+{: .callout}
+
 > ## Try Out Different Schedulers
 >
 > Try each of the static and dynamic schedulers on the code below,
